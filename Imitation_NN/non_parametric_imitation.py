@@ -24,8 +24,7 @@ class ImitationNearestNeighbors():
         # Getting the k-Nearest Neighbor actions
         state_diff = self.train_states - torch.tensor(input_state).to(self.device)
         l2_diff = torch.norm(state_diff, dim=1)
-        nn_actions = self.train_actions[torch.argsort(l2_diff)]
-        k_nn_actions = nn_actions[:k+1]
+        k_nn_actions = self.train_actions[torch.argsort(l2_diff)[:k+1]]
 
         return k_nn_actions
 
