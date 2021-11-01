@@ -1,7 +1,7 @@
 import os
 import torch
 
-from utils.dataloader import load_train_test_data
+from Imitation_NN.utils.dataloader import load_train_test_data
 
 class ImitationNearestNeighbors():
     def __init__(self,
@@ -17,7 +17,6 @@ class ImitationNearestNeighbors():
         self.train_states, self.train_actions = train_states.to(device), train_actions.to(device)
 
     def getNearestNeighbors(self, input_state, k):
-
         # Comparing the dataset shape and state
         assert input_state.shape != self.train_state[0].shape, "There is a data shape mismatch: \n Shape of loaded dataset: {} \n Shape of current state: {}"
 
