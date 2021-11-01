@@ -1,7 +1,6 @@
 dexman/*
 
-Imitation_NN/data/test/states/*
-Imitation_NN/data/test/actions/*
-Imitation_NN/data/train/states/*
-Imitation_NN/data/train/actions/*
-
+data/*
+Imitation_NN/__pycache__/*
+utils/__pycache__/*
+dexarm_deployment/evaluation/losses/*

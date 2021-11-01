@@ -33,6 +33,6 @@ def load_state_actions(data_path):
         actions.append(demo_actions)
 
     # Converting the lists into a tensor
-    states, actions = torch.stack(states, dim=0), torch.stack(actions, dim=0)
+    states, actions = torch.cat(states), torch.cat(actions)
 
     return states, actions
