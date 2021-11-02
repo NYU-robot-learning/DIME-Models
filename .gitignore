@@ -4,3 +4,6 @@ data/*
 Imitation_NN/__pycache__/*
 utils/__pycache__/*
 dexarm_deployment/evaluation/losses/*
+dexarm_deployment/log/*
+dexarm_deployment/__pycache__
+dexarm_deployment/model_scripts/__pycache__

@@ -15,7 +15,7 @@ class ImitationNearestNeighbors():
 
     def getNearestNeighbors(self, input_state, k):
         # Comparing the dataset shape and state
-        assert input_state.shape == self.states[0].shape, "There is a data shape mismatch: \n Shape of loaded dataset: {} \n Shape of current state: {}".format(input_state.shape, self.states[0].shape)
+        assert torch.tensor(input_state).shape == self.states[0].shape, "There is a data shape mismatch: \n Shape of loaded dataset: {} \n Shape of current state: {}".format(input_state.shape, self.states[0].shape)
 
         # Getting the k-Nearest Neighbor actions
         state_diff = self.states - torch.tensor(input_state).to(self.device)
