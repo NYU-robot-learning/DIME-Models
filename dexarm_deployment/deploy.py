@@ -115,5 +115,5 @@ class DexArmDeploy():
 
             desired_joint_angles = self.update_joint_state(updated_thumb_tip_coord, updated_ring_tip_coord)
 
-            print("Moving arm t0 {}\n".format(desired_joint_angles))
+            print("Moving arm to {}\n".format(desired_joint_angles))
             self.arm.move_hand(desired_joint_angles)
