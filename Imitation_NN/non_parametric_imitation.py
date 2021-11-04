@@ -22,13 +22,21 @@ class ImitationNearestNeighbors():
         l2_diff = torch.norm(state_diff, dim=1)
         k_nn_actions = self.actions[torch.argsort(l2_diff)[:k]]
 
-        return k_nn_actions
+        if k == 1:
+            return k_nn_actions, torch.argsort(l2_diff)[:k].cpu().detach()
+        else:
+            return k_nn_actions
 
     def find_optimum_action(self, input_state, k):
         # Getting the k-Nearest Neighbor actions for the input state
-        k_nn_actions = self.getNearestNeighbors(input_state, k)
+        if k == 1:
+            k_nn_action, neighbor_idx = self.getNearestNeighbors(input_state, k)
 
-        # Getting the mean value from the set of nearest neighbor states
-        mean_action = torch.mean(k_nn_actions, 0).cpu().detach()
+            return k_nn_action.cpu().detach(), neighbor_idx
+        else:
+            k_nn_actions = self.getNearestNeighbors(input_state, k)
 
-        return mean_action
+            # Getting the mean value from the set of nearest neighbor states
+            mean_action = torch.mean(k_nn_actions, 0).cpu().detach()
+
+            return mean_action        

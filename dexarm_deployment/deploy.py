@@ -26,12 +26,15 @@ MARKER_TOPIC = "/visualization_marker"
 JOINT_STATE_TOPIC = "/allegroHand_0/joint_states"
 
 class DexArmDeploy():
-    def __init__(self, model = "inn", device = "cpu"):
+    def __init__(self, debug = False, model = "inn", device = "cpu"):
         # Initializing ROS deployment node
         try:
             rospy.init_node("model_deploy")
         except:
             pass
+
+        # Setting the debug parameter
+        self.debug = debug
 
         # Initializing arm controller
         self.arm = DexArmControl()
@@ -41,8 +44,10 @@ class DexArmDeploy():
 
         # Initializing the model
         if model == "inn":
-            self.model = INNDeploy(k = 2, device = device)
-
+            if self.debug is True:
+                self.model = INNDeploy(k = 1, load_image_data = True, device = device)
+            else:
+                self.model = INNDeploy(k = 1, device = device)
         # Moving the dexterous arm to home position
         self.arm.home_robot()
 
@@ -98,6 +103,11 @@ class DexArmDeploy():
         while True:
             # Wating for key
             next_step = input()
+
+            # Setting the break condition
+            if next_step == "q":
+                break
+
             print("Getting state data...")
 
             # Getting the state data
@@ -106,7 +116,22 @@ class DexArmDeploy():
 
             print("Current state data:\n Thumb-tip position: {}\n Ring-tip position: {}\n Cube position: {}\n".format(thumb_tip_coord, ring_tip_coord, cube_pos))
 
-            action = list(self.model.get_action(thumb_tip_coord, ring_tip_coord, cube_pos))
+            if self.debug is True:
+                action, nn_state_image_path = self.model.get_action_with_image(thumb_tip_coord, ring_tip_coord, cube_pos)
+                action = list(action.reshape(6))
+
+                print("Action len: {}".format(action))
+
+                # Reading the Nearest Neighbor images 
+                nn_state_image = cv2.imread(nn_state_image_path)
+
+                combined_images = np.concatenate((cv2.resize(self.image, (640,360), interpolation = cv2.INTER_AREA), cv2.resize(nn_state_image, (640,360), interpolation = cv2.INTER_AREA)), axis=1)
+                cv2.imshow("Current state and Nearest Neighbor Images", combined_images)
+                cv2.waitKey(1)
+            else:
+                action = list(self.model.get_action(thumb_tip_coord, ring_tip_coord, cube_pos))
+
+                print("Action len: {}".format(len(action)))
 
             print("Corresponding action: ", action)
 

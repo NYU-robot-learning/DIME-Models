@@ -36,3 +36,22 @@ def load_state_actions(data_path):
     states, actions = torch.cat(states), torch.cat(actions)
 
     return states, actions
+
+def load_state_image_data(data_path):
+    image_data_path = os.path.join(data_path, "images")
+    demo_image_folders = os.listdir(image_data_path)
+    demo_image_folders.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
+
+    cumm_demos_image_count = []
+
+    for demo_folder in demo_image_folders:
+        demo_image_folder_path = os.path.join(image_data_path, demo_folder)
+        demo_image_count = len(os.listdir(demo_image_folder_path))
+
+        if len(cumm_demos_image_count) > 0:
+            cumm_demos_image_count.append(cumm_demos_image_count[-1] + demo_image_count)
+        else:
+            cumm_demos_image_count.append(demo_image_count)
+
+    return image_data_path, demo_image_folders, cumm_demos_image_count
+            

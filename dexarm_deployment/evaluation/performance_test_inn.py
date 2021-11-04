@@ -31,7 +31,11 @@ def performance_test_inn(data_path, k):
     
     # Testing the model
     for idx, test_state in enumerate(test_states):
-        obtained_action = inn.find_optimum_action(test_state, k)
+        if k == 1:
+            obtained_action, neighbor_index = inn.find_optimum_action(test_state, k)
+        else:
+            obtained_action = inn.find_optimum_action(test_state, k)
+
         action_loss = torch.norm(obtained_action - test_actions[idx])
 
         loss += action_loss
@@ -45,16 +49,19 @@ def performance_test_inn(data_path, k):
 if __name__ == "__main__":
     k_losses = []
     
+    # Computing the loss for 20 different k-values
     for k in range(20):
         print("Computing loss for k = {}".format(k + 1))
         computed_loss = performance_test_inn(DATA_PATH, k + 1)
 
         k_losses.append(computed_loss)
 
+    # Saving the losses in a pickle file
     loss_file = open(PERFORMANCE_METRICS_PATH, "ab")
     pickle.dump(k_losses, loss_file)
     loss_file.close()
 
+    # Plotting the k-value based losses
     plt.figure()
     plt.plot([x+1 for x in range(20)], k_losses)
     plt.show()
