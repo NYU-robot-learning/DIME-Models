@@ -48,8 +48,19 @@ class DexArmDeploy():
                 self.model = INNDeploy(k = 1, load_image_data = True, device = device)
             else:
                 self.model = INNDeploy(k = 1, device = device)
+
         # Moving the dexterous arm to home position
         self.arm.home_robot()
+
+        # Placing all the finger tips at constant a z position
+        self.arm.move_hand(
+            [
+                0, -0.174,  0.785,  0.785,  # Home position for the index finger
+                0, -0.174,  0.785,  0.785,  # Home position for the middle finger
+                0.47, 0.037, 1.398, 0.830,  # Home position for the ring finger
+                0.777, -0.105, 0.681, 0.931 # Home position for the thumb finger
+            ]
+        )
 
         # Initializing topic data
         self.image = None
@@ -108,7 +119,7 @@ class DexArmDeploy():
             if next_step == "q":
                 break
 
-            print("Getting state data...")
+            print("Getting state data...\n")
 
             # Getting the state data
             thumb_tip_coord, ring_tip_coord = self.get_tip_coords()
@@ -117,19 +128,22 @@ class DexArmDeploy():
             print("Current state data:\n Thumb-tip position: {}\n Ring-tip position: {}\n Cube position: {}\n".format(thumb_tip_coord, ring_tip_coord, cube_pos))
 
             if self.debug is True:
-                action, nn_state_image_path = self.model.get_action_with_image(thumb_tip_coord, ring_tip_coord, cube_pos)
+                action, nn_state_image_path, thumb_l2_diff, ring_l2_diff, cube_l2_diff = self.model.get_action_with_image(thumb_tip_coord, ring_tip_coord, cube_pos)
                 action = list(action.reshape(6))
 
-                print("Action len: {}".format(action))
-
+                print("Action: {}\n".format(action))
+                print("Distances:\n Thumb distance: {}\n Ring distance: {}\n Cube distance: {}".format(thumb_l2_diff.item(), ring_l2_diff.item(), cube_l2_diff.item()))
+                
                 # Reading the Nearest Neighbor images 
                 nn_state_image = cv2.imread(nn_state_image_path)
 
+                # Combing the surrent state image and NN image and printing them
                 combined_images = np.concatenate((cv2.resize(self.image, (640,360), interpolation = cv2.INTER_AREA), cv2.resize(nn_state_image, (640,360), interpolation = cv2.INTER_AREA)), axis=1)
                 cv2.imshow("Current state and Nearest Neighbor Images", combined_images)
                 cv2.waitKey(1)
+
             else:
-                action = list(self.model.get_action(thumb_tip_coord, ring_tip_coord, cube_pos))
+                action = list(self.model.get_action(thumb_tip_coord, ring_tip_coord, cube_pos).reshape(6))
 
                 print("Action len: {}".format(len(action)))
 

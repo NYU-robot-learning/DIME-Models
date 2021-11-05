@@ -49,7 +49,7 @@ def load_state_image_data(data_path):
         demo_image_count = len(os.listdir(demo_image_folder_path))
 
         if len(cumm_demos_image_count) > 0:
-            cumm_demos_image_count.append(cumm_demos_image_count[-1] + demo_image_count)
+            cumm_demos_image_count.append(cumm_demos_image_count[-1] + demo_image_count - 1)
         else:
             cumm_demos_image_count.append(demo_image_count)
 

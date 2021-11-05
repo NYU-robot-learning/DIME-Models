@@ -23,26 +23,29 @@ class INNDeploy():
     def get_action(self, thumb_tip_coord, ring_tip_coord, cube_pos):
         state = list(thumb_tip_coord) + list(ring_tip_coord) + list(cube_pos)
         if self.k == 1:
-            action, neighbor_idx =  self.model.find_optimum_action(state, self.k)
+            action, neighbor_idx, thumb_l2_diff, ring_l2_diff, cube_l2_diff =  self.model.find_optimum_action(state, self.k)
             return action.cpu().detach().numpy()
         else:
             return self.model.find_optimum_action(state, self.k).cpu().detach().numpy()
+
     def get_action_with_image(self, thumb_tip_coord, ring_tip_coord, cube_pos):
         if self.k == 1 and self.image_data_path is not None:
             state = list(thumb_tip_coord) + list(ring_tip_coord) + list(cube_pos)
-            calculated_action, neighbor_index = self.model.find_optimum_action(state, self.k)
+            calculated_action, neighbor_index, thumb_l2_diff, ring_l2_diff, cube_l2_diff = self.model.find_optimum_action(state, self.k)
 
-            # TODO - get the state and transition images for the corresponding INN index
-            for idx, cumm_demo_images in enumerate(self.cumm_demos_image_count):
-                if neighbor_index + 1 > cumm_demo_images - (idx + 1):
-                    # Obtaining the demo number
-                    demo_num = idx
+            if neighbor_index < self.cumm_demos_image_count[0]:
+                nn_image_num = neighbor_index
+            else:
+                for idx, cumm_demo_images in enumerate(self.cumm_demos_image_count):
+                    if neighbor_index + 1 > cumm_demo_images:
+                        # Obtaining the demo number
+                        demo_num = idx + 1
 
-                    # Getting the corresponding image number
-                    nn_image_num = neighbor_index - (cumm_demo_images - (idx + 1)) + 1
+                        # Getting the corresponding image number
+                        nn_image_num = neighbor_index - cumm_demo_images
 
             nn_state_image_path = os.path.join(self.image_data_path, self.demo_image_folders[demo_num], "state_{}.jpg".format(nn_image_num.item()))
 
-            return calculated_action.cpu().detach().numpy(), nn_state_image_path
+            return calculated_action.cpu().detach().numpy(), nn_state_image_path, thumb_l2_diff, ring_l2_diff, cube_l2_diff
         else:
             self.get_action(thumb_tip_coord, ring_tip_coord, cube_pos)

@@ -19,24 +19,30 @@ class ImitationNearestNeighbors():
 
         # Getting the k-Nearest Neighbor actions
         state_diff = self.states - torch.tensor(input_state).to(self.device)
-        l2_diff = torch.norm(state_diff, dim=1)
+
+        thumb_l2_diff = torch.norm(state_diff[:, :3], dim=1)
+        ring_l2_diff = torch.norm(state_diff[:, 3:6], dim=1)
+        cube_l2_diff = torch.norm(state_diff[:, 6:], dim=1)
+
+        l2_diff = thumb_l2_diff + ring_l2_diff + cube_l2_diff
+
+        sorted_idxs = torch.argsort(l2_diff)[:k]
+
         k_nn_actions = self.actions[torch.argsort(l2_diff)[:k]]
 
         if k == 1:
-            return k_nn_actions, torch.argsort(l2_diff)[:k].cpu().detach()
+            return k_nn_actions, torch.argsort(l2_diff)[:k].cpu().detach(), thumb_l2_diff[sorted_idxs], ring_l2_diff[sorted_idxs], cube_l2_diff[sorted_idxs]
         else:
             return k_nn_actions
 
     def find_optimum_action(self, input_state, k):
         # Getting the k-Nearest Neighbor actions for the input state
         if k == 1:
-            k_nn_action, neighbor_idx = self.getNearestNeighbors(input_state, k)
-
-            return k_nn_action.cpu().detach(), neighbor_idx
+            k_nn_action, neighbor_idx, thumb_l2_diff, ring_l2_diff, cube_l2_diff = self.getNearestNeighbors(input_state, k)
+            return k_nn_action.cpu().detach(), neighbor_idx, thumb_l2_diff, ring_l2_diff, cube_l2_diff
         else:
             k_nn_actions = self.getNearestNeighbors(input_state, k)
 
             # Getting the mean value from the set of nearest neighbor states
             mean_action = torch.mean(k_nn_actions, 0).cpu().detach()
-
-            return mean_action        
+            return mean_action
