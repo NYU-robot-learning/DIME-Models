@@ -24,16 +24,17 @@ class ImitationNearestNeighbors():
         ring_l2_diff = torch.norm(state_diff[:, 3:6], dim=1)
         cube_l2_diff = torch.norm(state_diff[:, 6:], dim=1)
 
-        l2_diff = thumb_l2_diff + ring_l2_diff + cube_l2_diff
+        l2_diff = thumb_l2_diff + ring_l2_diff + 0.25 * cube_l2_diff
+
 
         sorted_idxs = torch.argsort(l2_diff)[:k]
 
-        k_nn_actions = self.actions[torch.argsort(l2_diff)[:k]]
-
-        if k == 1:
-            return k_nn_actions, torch.argsort(l2_diff)[:k].cpu().detach(), thumb_l2_diff[sorted_idxs], ring_l2_diff[sorted_idxs], cube_l2_diff[sorted_idxs]
+        if k == 1: 
+            k_nn_actions = self.actions[torch.argsort(l2_diff)[0]]
+            return k_nn_actions, torch.argsort(l2_diff)[0].cpu().detach(), thumb_l2_diff[sorted_idxs], ring_l2_diff[sorted_idxs], cube_l2_diff[sorted_idxs]
         else:
-            return k_nn_actions
+            return self.actions[torch.argsort(l2_diff)[:k]]
+
 
     def find_optimum_action(self, input_state, k):
         # Getting the k-Nearest Neighbor actions for the input state

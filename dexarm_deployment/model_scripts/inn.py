@@ -35,6 +35,7 @@ class INNDeploy():
 
             if neighbor_index < self.cumm_demos_image_count[0]:
                 nn_image_num = neighbor_index
+                demo_num = 1
             else:
                 for idx, cumm_demo_images in enumerate(self.cumm_demos_image_count):
                     if neighbor_index + 1 > cumm_demo_images:
@@ -43,9 +44,11 @@ class INNDeploy():
 
                         # Getting the corresponding image number
                         nn_image_num = neighbor_index - cumm_demo_images
+                        nn_trans_image_num = nn_image_num + 1
 
             nn_state_image_path = os.path.join(self.image_data_path, self.demo_image_folders[demo_num], "state_{}.jpg".format(nn_image_num.item()))
+            trans_state_image_path = os.path.join(self.image_data_path, self.demo_image_folders[demo_num], "state_{}.jpg".format(nn_trans_image_num.item()))
 
-            return calculated_action.cpu().detach().numpy(), nn_state_image_path, thumb_l2_diff, ring_l2_diff, cube_l2_diff
+            return calculated_action.cpu().detach().numpy(), nn_state_image_path, trans_state_image_path, thumb_l2_diff, ring_l2_diff, cube_l2_diff
         else:
             self.get_action(thumb_tip_coord, ring_tip_coord, cube_pos)

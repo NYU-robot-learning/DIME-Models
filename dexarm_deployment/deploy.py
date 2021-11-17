@@ -10,9 +10,10 @@ from cv_bridge import CvBridge, CvBridgeError
 
 # Dexterous aarm control package import
 from move_dexarm import DexArmControl
+from allegro_robot.allegro_hand_control import AllegroEnv
 
 # Importing the Allegro IK library
-from allegro_ik import AllegroInvKDL
+from allegro_ik.core.allegro_ik import AllegroInvKDL
 
 # Model Imports
 from model_scripts.inn import INNDeploy
@@ -26,7 +27,7 @@ MARKER_TOPIC = "/visualization_marker"
 JOINT_STATE_TOPIC = "/allegroHand_0/joint_states"
 
 class DexArmDeploy():
-    def __init__(self, debug = False, model = "inn", device = "cpu"):
+    def __init__(self, use_k = 1, use_abs = True, debug = False, model = "inn", device = "cpu"):
         # Initializing ROS deployment node
         try:
             rospy.init_node("model_deploy")
@@ -35,19 +36,22 @@ class DexArmDeploy():
 
         # Setting the debug parameter
         self.debug = debug
+        self.abs = use_abs
 
         # Initializing arm controller
         self.arm = DexArmControl()
+        self.allegro_env = AllegroEnv()
 
         # Initializing Allegro Ik Library
-        self.allegro_ik = AllegroInvKDL(cfg = None, urdf_path = "/home/sridhar/dexterous_arm/ik_stuff/urdf_template/allegro_right.urdf")
+        self.allegro_ik = AllegroInvKDL(cfg = None, urdf_path = "/home/sridhar/dexterous_arm/ik_stuff/allegro_ik/urdf_template/allegro_right.urdf")
 
         # Initializing the model
         if model == "inn":
+            self.k = use_k
             if self.debug is True:
                 self.model = INNDeploy(k = 1, load_image_data = True, device = device)
             else:
-                self.model = INNDeploy(k = 1, device = device)
+                self.model = INNDeploy(k = self.k, device = device)
 
         # Moving the dexterous arm to home position
         self.arm.home_robot()
@@ -121,6 +125,8 @@ class DexArmDeploy():
 
             print("Getting state data...\n")
 
+            print("Current joint angles: {}\n".format(self.allegro_joint_state.position))
+
             # Getting the state data
             thumb_tip_coord, ring_tip_coord = self.get_tip_coords()
             cube_pos = self.get_cube_position()
@@ -128,31 +134,39 @@ class DexArmDeploy():
             print("Current state data:\n Thumb-tip position: {}\n Ring-tip position: {}\n Cube position: {}\n".format(thumb_tip_coord, ring_tip_coord, cube_pos))
 
             if self.debug is True:
-                action, nn_state_image_path, thumb_l2_diff, ring_l2_diff, cube_l2_diff = self.model.get_action_with_image(thumb_tip_coord, ring_tip_coord, cube_pos)
+                action, nn_state_image_path, trans_state_image_path, thumb_l2_diff, ring_l2_diff, cube_l2_diff = self.model.get_action_with_image(thumb_tip_coord, ring_tip_coord, cube_pos)
                 action = list(action.reshape(6))
 
-                print("Action: {}\n".format(action))
                 print("Distances:\n Thumb distance: {}\n Ring distance: {}\n Cube distance: {}".format(thumb_l2_diff.item(), ring_l2_diff.item(), cube_l2_diff.item()))
                 
                 # Reading the Nearest Neighbor images 
                 nn_state_image = cv2.imread(nn_state_image_path)
+                trans_state_image = cv2.imread(trans_state_image_path)
 
                 # Combing the surrent state image and NN image and printing them
-                combined_images = np.concatenate((cv2.resize(self.image, (640,360), interpolation = cv2.INTER_AREA), cv2.resize(nn_state_image, (640,360), interpolation = cv2.INTER_AREA)), axis=1)
+                combined_images = np.concatenate((
+                    cv2.resize(self.image, (420, 240), interpolation = cv2.INTER_AREA), 
+                    cv2.resize(nn_state_image, (420, 240), interpolation = cv2.INTER_AREA),
+                    cv2.resize(trans_state_image, (420, 240), interpolation = cv2.INTER_AREA)
+                ), axis=1)
+
                 cv2.imshow("Current state and Nearest Neighbor Images", combined_images)
                 cv2.waitKey(1)
 
             else:
                 action = list(self.model.get_action(thumb_tip_coord, ring_tip_coord, cube_pos).reshape(6))
 
-                print("Action len: {}".format(len(action)))
-
             print("Corresponding action: ", action)
 
-            updated_thumb_tip_coord = np.array(thumb_tip_coord) + np.array(action[0:3])
-            updated_ring_tip_coord = np.array(ring_tip_coord) + np.array(action[3:6])
+            if self.abs:
+                # print("Using absolute values for thumb: {} and for ring finger: {}".format(action[:3], action[3:]))
+                updated_thumb_tip_coord = action[0:3]
+                updated_ring_tip_coord = action[3:6]
+            else:
+                updated_thumb_tip_coord = np.array(thumb_tip_coord) + np.array(action[0:3])
+                updated_ring_tip_coord = np.array(ring_tip_coord) + np.array(action[3:6])
 
             desired_joint_angles = self.update_joint_state(updated_thumb_tip_coord, updated_ring_tip_coord)
 
             print("Moving arm to {}\n".format(desired_joint_angles))
-            self.arm.move_hand(desired_joint_angles)
+            self.allegro_env.pose_step(desired_joint_angles)
