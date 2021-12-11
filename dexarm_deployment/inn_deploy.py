@@ -10,10 +10,9 @@ from cv_bridge import CvBridge, CvBridgeError
 
 # Dexterous aarm control package import
 from move_dexarm import DexArmControl
-from allegro_robot.allegro_hand_control import AllegroEnv
 
 # Importing the Allegro IK library
-from allegro_ik.core.allegro_ik import AllegroInvKDL
+from ik_teleop.ik_core.allegro_ik import AllegroInvKDL
 
 # Model Imports
 from model_scripts.inn import INNDeploy
@@ -27,44 +26,35 @@ MARKER_TOPIC = "/visualization_marker"
 JOINT_STATE_TOPIC = "/allegroHand_0/joint_states"
 
 class DexArmDeploy():
-    def __init__(self, use_k = 1, use_abs = True, debug = False, model = "inn", device = "cpu"):
+    def __init__(self, k = 1, use_abs = True, debug = False, cube_priority = 1, device = "cpu"):
         # Initializing ROS deployment node
         try:
             rospy.init_node("model_deploy")
         except:
             pass
 
-        # Setting the debug parameter
-        self.debug = debug
+        # Setting the debug parameter only if k is 1
+        if k == 1:
+            self.debug = debug
+        else:
+            self.debug = False
+
         self.abs = use_abs
 
         # Initializing arm controller
         self.arm = DexArmControl()
-        self.allegro_env = AllegroEnv()
 
         # Initializing Allegro Ik Library
-        self.allegro_ik = AllegroInvKDL(cfg = None, urdf_path = "/home/sridhar/dexterous_arm/ik_stuff/allegro_ik/urdf_template/allegro_right.urdf")
+        self.allegro_ik = AllegroInvKDL(cfg = None, urdf_path = "/home/sridhar/dexterous_arm/ik_stuff/ik_teleop/urdf_template/allegro_right.urdf")
 
-        # Initializing the model
-        if model == "inn":
-            self.k = use_k
-            if self.debug is True:
-                self.model = INNDeploy(k = 1, load_image_data = True, device = device)
-            else:
-                self.model = INNDeploy(k = self.k, device = device)
+        # Initializing INN
+        if self.debug is True:
+            self.model = INNDeploy(k = 1, load_image_data = True, cube_priority = cube_priority, device = device)
+        else:
+            self.model = INNDeploy(k = k, cube_priority = cube_priority, device = device)
 
         # Moving the dexterous arm to home position
         self.arm.home_robot()
-
-        # Placing all the finger tips at constant a z position
-        self.arm.move_hand(
-            [
-                0, -0.174,  0.785,  0.785,  # Home position for the index finger
-                0, -0.174,  0.785,  0.785,  # Home position for the middle finger
-                0.47, 0.037, 1.398, 0.830,  # Home position for the ring finger
-                0.777, -0.105, 0.681, 0.931 # Home position for the thumb finger
-            ]
-        )
 
         # Initializing topic data
         self.image = None
@@ -95,20 +85,26 @@ class DexArmDeploy():
         return cube_position
 
     def get_tip_coords(self):
-        thumb_coord = self.allegro_ik.finger_forward_kinematics('thumb', list(self.allegro_joint_state.position)[12:16])[0]
+        index_coord = self.allegro_ik.finger_forward_kinematics('index', list(self.allegro_joint_state.position)[:4])[0]
+        middle_coord = self.allegro_ik.finger_forward_kinematics('middle', list(self.allegro_joint_state.position)[4:8])[0]
         ring_coord = self.allegro_ik.finger_forward_kinematics('ring', list(self.allegro_joint_state.position)[8:12])[0]
+        thumb_coord = self.allegro_ik.finger_forward_kinematics('thumb', list(self.allegro_joint_state.position)[12:16])[0]
 
-        return thumb_coord, ring_coord
+        return index_coord, middle_coord, ring_coord, thumb_coord
 
-    def update_joint_state(self, thumb_tip_coord, ring_tip_coord):
+    def update_joint_state(self, index_tip_coord, middle_tip_coord, ring_tip_coord, thumb_tip_coord):
         current_joint_angles = list(self.allegro_joint_state.position)
 
-        thumb_joint_angles = self.allegro_ik.finger_inverse_kinematics('thumb', thumb_tip_coord, current_joint_angles[12:16])
+        index_joint_angles = self.allegro_ik.finger_inverse_kinematics('index', index_tip_coord, current_joint_angles[0:4])
+        middle_joint_angles = self.allegro_ik.finger_inverse_kinematics('middle', middle_tip_coord, current_joint_angles[4:8])
         ring_joint_angles = self.allegro_ik.finger_inverse_kinematics('ring', ring_tip_coord, current_joint_angles[8:12])
+        thumb_joint_angles = self.allegro_ik.finger_inverse_kinematics('thumb', thumb_tip_coord, current_joint_angles[12:16])
 
         desired_joint_angles = copy(current_joint_angles)
         
         for idx in range(4):
+            desired_joint_angles[idx] = index_joint_angles[idx]
+            desired_joint_angles[4 + idx] = middle_joint_angles[idx]
             desired_joint_angles[8 + idx] = ring_joint_angles[idx]
             desired_joint_angles[12 + idx] = thumb_joint_angles[idx]
 
@@ -128,16 +124,18 @@ class DexArmDeploy():
             print("Current joint angles: {}\n".format(self.allegro_joint_state.position))
 
             # Getting the state data
-            thumb_tip_coord, ring_tip_coord = self.get_tip_coords()
+            index_tip_coord, middle_tip_coord, ring_tip_coord, thumb_tip_coord = self.get_tip_coords()
             cube_pos = self.get_cube_position()
 
-            print("Current state data:\n Thumb-tip position: {}\n Ring-tip position: {}\n Cube position: {}\n".format(thumb_tip_coord, ring_tip_coord, cube_pos))
+            print("Current state data:\n Index-tip position: {}\n Middle-tip position: {}\n Ring-tip position: {}\n Thumb-tip position: {}\n Cube position: {}\n".format(index_tip_coord, middle_tip_coord, ring_tip_coord, thumb_tip_coord, cube_pos))
 
             if self.debug is True:
-                action, nn_state_image_path, trans_state_image_path, thumb_l2_diff, ring_l2_diff, cube_l2_diff = self.model.get_action_with_image(thumb_tip_coord, ring_tip_coord, cube_pos)
-                action = list(action.reshape(6))
+                action, nn_state_image_path, trans_state_image_path, index_l2_diff, middle_l2_diff, ring_l2_diff, thumb_l2_diff, cube_l2_diff = self.model.get_action_with_image(index_tip_coord, middle_tip_coord, ring_tip_coord, thumb_tip_coord, cube_pos)
+                action = list(action.reshape(12))
 
-                print("Distances:\n Thumb distance: {}\n Ring distance: {}\n Cube distance: {}".format(thumb_l2_diff.item(), ring_l2_diff.item(), cube_l2_diff.item()))
+                print("Trans state img path: {}".format(trans_state_image_path))
+
+                print("Distances:\n Index distance: {}\n Middle distance: {}\n Ring distance: {}\n Thumb distance: {}\n Cube distance: {}".format(index_l2_diff.item(), middle_l2_diff.item(), ring_l2_diff.item(), thumb_l2_diff.item(), cube_l2_diff.item()))
                 
                 # Reading the Nearest Neighbor images 
                 nn_state_image = cv2.imread(nn_state_image_path)
@@ -154,19 +152,28 @@ class DexArmDeploy():
                 cv2.waitKey(1)
 
             else:
-                action = list(self.model.get_action(thumb_tip_coord, ring_tip_coord, cube_pos).reshape(6))
+                action = list(self.model.get_action(index_tip_coord, middle_tip_coord, ring_tip_coord, thumb_tip_coord, cube_pos).reshape(12))
 
             print("Corresponding action: ", action)
 
             if self.abs:
                 # print("Using absolute values for thumb: {} and for ring finger: {}".format(action[:3], action[3:]))
-                updated_thumb_tip_coord = action[0:3]
-                updated_ring_tip_coord = action[3:6]
+                updated_index_tip_coord = action[0:3]
+                updated_middle_tip_coord = action[3:6]
+                updated_ring_tip_coord = action[6:9]
+                updated_thumb_tip_coord = action[9:12]
             else:
-                updated_thumb_tip_coord = np.array(thumb_tip_coord) + np.array(action[0:3])
-                updated_ring_tip_coord = np.array(ring_tip_coord) + np.array(action[3:6])
+                updated_index_tip_coord = np.array(index_tip_coord) + np.array(action[0:3])
+                updated_middle_tip_coord = np.array(middle_tip_coord) + np.array(action[3:6])
+                updated_ring_tip_coord = np.array(ring_tip_coord) + np.array(action[6:9])
+                updated_thumb_tip_coord = np.array(thumb_tip_coord) + np.array(action[9:12])
 
-            desired_joint_angles = self.update_joint_state(updated_thumb_tip_coord, updated_ring_tip_coord)
+            desired_joint_angles = self.update_joint_state(updated_index_tip_coord, updated_middle_tip_coord, updated_ring_tip_coord, updated_thumb_tip_coord)
 
             print("Moving arm to {}\n".format(desired_joint_angles))
-            self.allegro_env.pose_step(desired_joint_angles)
+            self.arm.move_hand(desired_joint_angles)
+
+
+if __name__ == "__main__":
+    d = DexArmDeploy(debug = False, k = 3, cube_priority = 2, device = "cuda")
+    d.deploy()

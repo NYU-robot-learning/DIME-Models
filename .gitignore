@@ -1,6 +1,6 @@
 dexman/*
-old_data/*
 data/*
+old_data/*
 Imitation_NN/__pycache__/*
 utils/__pycache__/*
 dexarm_deployment/evaluation/losses/*
