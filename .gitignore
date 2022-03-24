@@ -1,9 +1,15 @@
-dexman/*
-data/*
-old_data/*
-Imitation_NN/__pycache__/*
-utils/__pycache__/*
-dexarm_deployment/evaluation/losses/*
-dexarm_deployment/log/*
-dexarm_deployment/__pycache__
-dexarm_deployment/model_scripts/__pycache__
+# Data
+arm_models/data/*
+
+# Losses and Graphs
+arm_models/deploy/evaluation/losses/*
+arm_models/deploy/evaluation/graphs/*
+
+# Model checkpoints
+arm_models/deploy/checkpoints/*
+
+# Wandb logs
+arm_models/wandb/*
+
+# Other installation files
+dexterous_arm_models.egg-info/*

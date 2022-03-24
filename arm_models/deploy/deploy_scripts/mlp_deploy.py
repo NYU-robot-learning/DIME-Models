@@ -1,6 +1,7 @@
 # Standard imports
 import numpy as np
 import cv2
+import torch
 
 # Standard ROS imports
 import rospy
@@ -15,7 +16,7 @@ from move_dexarm import DexArmControl
 from ik_teleop.ik_core.allegro_ik import AllegroInvKDL
 
 # Model Imports
-from model_scripts.inn import INNDeploy
+from arm_models.imitation_models.Simple_MLP.model import MLP
 
 # Other imports
 from copy import deepcopy as copy
@@ -23,23 +24,20 @@ from copy import deepcopy as copy
 # ROS Topics to get the AR Marker data
 IMAGE_TOPIC = "/cam_1/color/image_raw"
 MARKER_TOPIC = "/visualization_marker"
-JOINT_STATE_TOPIC = "/allegroHand_0/joint_states"
+JOINT_STATE_TOPIC = "/allegroHand/joint_states"
 
-class DexArmDeploy():
-    def __init__(self, k = 1, use_abs = True, debug = False, cube_priority = 1, device = "cpu"):
+MODEL_CHKPT_PATH = '/home/sridhar/dexterous_arm/models/arm_models/dexarm_deployment/model_checkpoints/mlp-final.pth'
+
+class DexArmMLPDeploy():
+    def __init__(self, device = 'cpu'):
+        # Ignoring scientific notations
+        torch.set_printoptions(precision=None)
+
         # Initializing ROS deployment node
         try:
             rospy.init_node("model_deploy")
         except:
             pass
-
-        # Setting the debug parameter only if k is 1
-        if k == 1:
-            self.debug = debug
-        else:
-            self.debug = False
-
-        self.abs = use_abs
 
         # Initializing arm controller
         self.arm = DexArmControl()
@@ -47,11 +45,12 @@ class DexArmDeploy():
         # Initializing Allegro Ik Library
         self.allegro_ik = AllegroInvKDL(cfg = None, urdf_path = "/home/sridhar/dexterous_arm/ik_stuff/ik_teleop/urdf_template/allegro_right.urdf")
 
-        # Initializing INN
-        if self.debug is True:
-            self.model = INNDeploy(k = 1, load_image_data = True, cube_priority = cube_priority, device = device)
-        else:
-            self.model = INNDeploy(k = k, cube_priority = cube_priority, device = device)
+        # Loading the model and assigning device
+        self.device = torch.device(device)
+        self.model = MLP()
+        self.model = self.model.to(device)
+        self.model.load_state_dict(torch.load(MODEL_CHKPT_PATH))
+        self.model.eval()
 
         # Moving the dexterous arm to home position
         self.arm.home_robot()
@@ -112,7 +111,7 @@ class DexArmDeploy():
 
     def deploy(self):
         while True:
-            # Wating for key
+            # Waiting for key
             next_step = input()
 
             # Setting the break condition
@@ -129,51 +128,28 @@ class DexArmDeploy():
 
             print("Current state data:\n Index-tip position: {}\n Middle-tip position: {}\n Ring-tip position: {}\n Thumb-tip position: {}\n Cube position: {}\n".format(index_tip_coord, middle_tip_coord, ring_tip_coord, thumb_tip_coord, cube_pos))
 
-            if self.debug is True:
-                action, nn_state_image_path, trans_state_image_path, index_l2_diff, middle_l2_diff, ring_l2_diff, thumb_l2_diff, cube_l2_diff = self.model.get_action_with_image(index_tip_coord, middle_tip_coord, ring_tip_coord, thumb_tip_coord, cube_pos)
-                action = list(action.reshape(12))
+            cv2.imshow("Current state", self.image)
+            cv2.waitKey(1)
 
-                print("Trans state img path: {}".format(trans_state_image_path))
-
-                print("Distances:\n Index distance: {}\n Middle distance: {}\n Ring distance: {}\n Thumb distance: {}\n Cube distance: {}".format(index_l2_diff.item(), middle_l2_diff.item(), ring_l2_diff.item(), thumb_l2_diff.item(), cube_l2_diff.item()))
-                
-                # Reading the Nearest Neighbor images 
-                nn_state_image = cv2.imread(nn_state_image_path)
-                trans_state_image = cv2.imread(trans_state_image_path)
-
-                # Combing the surrent state image and NN image and printing them
-                combined_images = np.concatenate((
-                    cv2.resize(self.image, (420, 240), interpolation = cv2.INTER_AREA), 
-                    cv2.resize(nn_state_image, (420, 240), interpolation = cv2.INTER_AREA),
-                    cv2.resize(trans_state_image, (420, 240), interpolation = cv2.INTER_AREA)
-                ), axis=1)
-
-                cv2.imshow("Current state and Nearest Neighbor Images", combined_images)
-                cv2.waitKey(1)
-
-            else:
-                action = list(self.model.get_action(index_tip_coord, middle_tip_coord, ring_tip_coord, thumb_tip_coord, cube_pos).reshape(12))
+            # Passing the input to the model to get the corresponding action
+            input_coordinates = torch.tensor(np.concatenate([index_tip_coord, middle_tip_coord, ring_tip_coord, thumb_tip_coord, cube_pos]))
+            action = self.model(input_coordinates.float().to(self.device)).detach().cpu().numpy()[0]
 
             print("Corresponding action: ", action)
 
-            if self.abs:
-                # print("Using absolute values for thumb: {} and for ring finger: {}".format(action[:3], action[3:]))
-                updated_index_tip_coord = action[0:3]
-                updated_middle_tip_coord = action[3:6]
-                updated_ring_tip_coord = action[6:9]
-                updated_thumb_tip_coord = action[9:12]
-            else:
-                updated_index_tip_coord = np.array(index_tip_coord) + np.array(action[0:3])
-                updated_middle_tip_coord = np.array(middle_tip_coord) + np.array(action[3:6])
-                updated_ring_tip_coord = np.array(ring_tip_coord) + np.array(action[6:9])
-                updated_thumb_tip_coord = np.array(thumb_tip_coord) + np.array(action[9:12])
+            # Updating the hand target coordinates
+            updated_index_tip_coord = action[0:3]
+            updated_middle_tip_coord = action[3:6]
+            updated_ring_tip_coord = action[6:9]
+            updated_thumb_tip_coord = action[9:12]
 
+            print("updated index tip coord:", updated_index_tip_coord)
+            
             desired_joint_angles = self.update_joint_state(updated_index_tip_coord, updated_middle_tip_coord, updated_ring_tip_coord, updated_thumb_tip_coord)
 
             print("Moving arm to {}\n".format(desired_joint_angles))
             self.arm.move_hand(desired_joint_angles)
 
-
-if __name__ == "__main__":
-    d = DexArmDeploy(debug = False, k = 3, cube_priority = 2, device = "cuda")
+if __name__ == '__main__':
+    d = DexArmMLPDeploy(device = 'cpu')
     d.deploy()
