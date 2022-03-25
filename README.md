@@ -15,8 +15,8 @@ This is the official implementation of the paper [Dexterous Manipulation Made Ea
 DIME consists of two phases: demonstration colleciton, which is performed in real-time with visual feedback, and demonstration-based policy learning, which can learn to solve dexterous tasks from a limited number of demonstrations.
 
 ## Setup
-The code base is split into 4 separate repositories for convenience. You can clone and setup each package by following the instructions on their respective repositories. The packages are:
-- Controller code:
+The code base is split into 5 separate packages for convenience and this is one out of the five repositories. You can clone and setup each package by following the instructions on their respective repositories. The packages are:
+- Controller packages:
   - [Allegro Hand Controller](https://github.com/NYU-robot-learning/Allegro-Hand-Controller-DIME).
   - [Kinova Arm Controller](https://github.com/NYU-robot-learning/Kinova-Arm-Controller-DIME).
 - [Teleop with Inverse Kinematics Package](https://github.com/NYU-robot-learning/DIME-IK-TeleOp).
