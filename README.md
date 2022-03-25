@@ -18,7 +18,7 @@ DIME consists of two phases: demonstration colleciton, which is performed in rea
 The code base is split into 4 separate repositories for convenience. You can clone and setup each package by following the instructions on their respective repositories. The packages are:
 - Controller code:
   - [Allegro Hand Controller](https://github.com/NYU-robot-learning/Allegro-Hand-Controller-DIME).
-  - [Kinova Arm Controller](https://github.com/NYU-robot-learning/Kinova-Arm-Controller-Noetic).
+  - [Kinova Arm Controller](https://github.com/NYU-robot-learning/Kinova-Arm-Controller-DIME).
 - [Teleop with Inverse Kinematics Package](https://github.com/NYU-robot-learning/DIME-IK-TeleOp).
 - Imitation Learning Models (present in this repository).
 - [State based and Image based Demonstration collection package](https://github.com/NYU-robot-learning/DIME-Demonstrations).
