@@ -5,9 +5,9 @@ This is the official implementation of DIME from the paper [Dexterous Manipulati
 
 ## Execution on Real Robot
 <p align="center">
-  <img width="45%" src="https://github.com/NYU-robot-learning/dime/blob/gh-pages/figs/block-8x-optimized.gif">
-  <img width="45%" src="https://github.com/NYU-robot-learning/dime/blob/gh-pages/figs/fidget-8x-optimzed.gif">
-  <img width="45%" src="https://github.com/NYU-robot-learning/dime/blob/gh-pages/figs/flip-2x-optimized.gif">
+  <img width="30%" src="https://github.com/NYU-robot-learning/dime/blob/gh-pages/figs/block-8x-optimized.gif">
+  <img width="30%" src="https://github.com/NYU-robot-learning/dime/blob/gh-pages/figs/fidget-8x-optimzed.gif">
+  <img width="30%" src="https://github.com/NYU-robot-learning/dime/blob/gh-pages/figs/flip-2x-optimized.gif">
  </p>
 
 ## Method
