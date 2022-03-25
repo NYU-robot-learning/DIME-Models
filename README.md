@@ -1,5 +1,5 @@
 # Dexterous Imitation Made Easy
-**Authors**: Sridhar Pandian Arunachalam*, Sneha Silwal*, [Ben Evans](https://bennevans.github.io/), [Lerrel Pinto](https://lerrelpinto.com)
+**Authors**: Sridhar Pandian Arunachalam*, [Sneha Silwal](http://ssilwal.com/)*, [Ben Evans](https://bennevans.github.io/), [Lerrel Pinto](https://lerrelpinto.com)
 
 This is the official implementation of the paper [Dexterous Manipulation Made Easy](https://arxiv.org/abs/2203.13251). 
 
