@@ -36,3 +36,14 @@ pip3 install -e .
 
 ## Data
 All our data can be found in this URL: [https://drive.google.com/drive/folders/1nunGHB2EK9xvlmepNNziDDbt-pH8OAhi](https://drive.google.com/drive/folders/1nunGHB2EK9xvlmepNNziDDbt-pH8OAhi)
+
+## Citation
+
+If you use this repo in your research, please consider citing the paper as follows:
+```
+@article{arunachalam2022dime,
+  title={Dexterous Imitation Made Easy: A Learning-Based Framework for Efficient Dexterous Manipulation},
+  author={Sridhar Pandian Arunachalam and Sneha Silwal and Ben Evans and Lerrel Pinto},
+  journal={arXiv preprint arXiv:2203.13251},
+  year={2022}
+}
