@@ -1,7 +1,7 @@
 # Dexterous Imitation Made Easy
 **Authors**: Sridhar Pandian Arunachalam*, Sneha Silwal*, Ben Evans, [Lerrel Pinto](https://lerrelpinto.com)
 
-This is the official implementation of DIME from the paper [Dexterous Manipulation Made Easy](https://arxiv.org/abs/2203.13251). 
+This is the official implementation of the paper [Dexterous Manipulation Made Easy](https://arxiv.org/abs/2203.13251). 
 
 ## Execution on Real Robot
 <p align="center">
