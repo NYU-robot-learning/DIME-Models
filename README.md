@@ -16,9 +16,12 @@ DIME consists of two phases: demonstration colleciton, which is performed in rea
 
 ## Setup
 The code base is split into 5 separate packages for convenience and this is one out of the five repositories. You can clone and setup each package by following the instructions on their respective repositories. The packages are:
-- Robot controller packages:
+- [Robot controller packages](https://github.com/NYU-robot-learning/DIME-Controllers):
   - [Allegro Hand Controller](https://github.com/NYU-robot-learning/Allegro-Hand-Controller-DIME).
   - [Kinova Arm Controller](https://github.com/NYU-robot-learning/Kinova-Arm-Controller-DIME).
+- [Camera packages](https://github.com/NYU-robot-learning/DIME-Camera-Packages)
+  - [Realsense-ROS](https://github.com/NYU-robot-learning/Realsense-ROS-DIME).
+  - [AR_Tracker_Alvar](https://github.com/ros-perception/ar_track_alvar).
 - (Phase 1) Demonstration collection packages:
   - [Teleop with Inverse Kinematics Package](https://github.com/NYU-robot-learning/DIME-IK-TeleOp).
   - [State based and Image based Demonstration collection package](https://github.com/NYU-robot-learning/DIME-Demonstrations).
