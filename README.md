@@ -26,7 +26,7 @@ The code base is split into 5 separate packages for convenience and this is one 
   - [Teleop with Inverse Kinematics Package](https://github.com/NYU-robot-learning/DIME-IK-TeleOp).
   - [State based and Image based Demonstration collection package](https://github.com/NYU-robot-learning/DIME-Demonstrations).
 - (Phase 2) Nearest-Neighbor Imitation Learning (present in this repository).
-- Simulation [environments](https://github.com/NYU-robot-learning/dime_env) and DAPG related codebase.
+- Simulation [environments](https://github.com/NYU-robot-learning/dime_env) and [DAPG related codebase](https://github.com/ssilwal/allegro-dapg).
 
 You need to setup the Controller packages and IK-TeleOp package before using this package. 
 To install the dependencies for this package with `pip`:
